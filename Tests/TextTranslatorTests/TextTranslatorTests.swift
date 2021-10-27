@@ -24,7 +24,6 @@ enum Strings: String, CaseIterable {
 }
 
 class TestTextTranslator : TextTranslationService {
-
     func translate(_ texts: [TranslationKey : String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher {
         let subj = FinishedSubject()
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
@@ -118,5 +117,17 @@ final class TextTranslatorTests: XCTestCase {
         XCTAssert(table.hasUntranslatedValues(for: keys, in: ["en"]))
         table.merge(with: table2)
         XCTAssertFalse(table.hasUntranslatedValues(for: keys, in: ["en"]))
+    }
+    func testFailure() {
+        let translator = TextTranslator(service:nil)
+        translator.translate(Strings.allCases.map { $0.rawValue }, from: "se", to: ["en"]).sink { compl in
+            if case let .failure(error) = compl, let e = error as? TextTranslatorError {
+                XCTAssert(e == TextTranslatorError.missingService)
+            } else {
+                XCTFail("Incorrect error?")
+            }
+        } receiveValue: { table in
+            XCTFail("Should not have completed")
+        }.store(in: &cancellables)
     }
 }
