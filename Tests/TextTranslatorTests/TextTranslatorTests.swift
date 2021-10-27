@@ -25,7 +25,7 @@ enum Strings: String, CaseIterable {
 
 class TestTextTranslator : TextTranslationService {
 
-    func translate(_ texts: [TranslationKey : String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable) -> FinishedPublisher {
+    func translate(_ texts: [TranslationKey : String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher {
         let subj = FinishedSubject()
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
             var table = table
@@ -41,7 +41,7 @@ class TestTextTranslator : TextTranslationService {
         }
         return subj.eraseToAnyPublisher()
     }
-    func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable) -> FinishedPublisher {
+    func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher {
         let subj = FinishedSubject()
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
             var table = table
@@ -92,7 +92,7 @@ final class TextTranslatorTests: XCTestCase {
     }
     func testTranslationTable() {
         let keys = Strings.allCases.map { $0.rawValue }
-        var table = TextTransaltionTable()
+        var table = TextTranslationTable()
         
         XCTAssert(table.translationExists(forKey: Strings.string1.rawValue, in: "en") == false)
         table.set(value: Strings.string1.translatedValue, for: Strings.string1.rawValue, in: "en")
@@ -110,8 +110,8 @@ final class TextTranslatorTests: XCTestCase {
     }
     func testMergeTables() {
         let keys = Strings.allCases.map { $0.rawValue }
-        var table = TextTransaltionTable()
-        var table2 = TextTransaltionTable()
+        var table = TextTranslationTable()
+        var table2 = TextTranslationTable()
         table.set(value: Strings.string1.translatedValue, for: Strings.string1.rawValue, in: "en")
         table2.set(value: Strings.string2.translatedValue, for: Strings.string2.rawValue, in: "en")
         

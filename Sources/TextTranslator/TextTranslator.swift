@@ -30,7 +30,7 @@ public extension Array where Element: Translatable {
     }
 }
 /// Holds translated strings for x languages
-public struct TextTransaltionTable {
+public struct TextTranslationTable {
     /// The translation database
     public var db: [LanguageKey: [TranslationKey: TranslatedValue]] = [:]
     /// Initializes a new table
@@ -38,7 +38,7 @@ public struct TextTransaltionTable {
     }
     /// Merge self with another table. Any value that exists in the new table will overwrite the current database values
     /// - Parameter table: table to merge with
-    public mutating func merge(with table:TextTransaltionTable) {
+    public mutating func merge(with table:TextTranslationTable) {
         for (lang,vals) in table.db {
             for (k,v) in vals {
                 if db[lang] == nil {
@@ -170,11 +170,11 @@ public struct TranslatedString {
 /// Publisher used when translating a single text
 public typealias TranslatedPublisher = AnyPublisher<TranslatedString, Error>
 /// Publisher used when translating mutiple texts
-public typealias FinishedPublisher = AnyPublisher<TextTransaltionTable, Error>
+public typealias FinishedPublisher = AnyPublisher<TextTranslationTable, Error>
 /// Subject used when translating a single text
 public typealias TranslatedSubject = PassthroughSubject<TranslatedString, Error>
 /// Subject used when translating multiple texts
-public typealias FinishedSubject = PassthroughSubject<TextTransaltionTable, Error>
+public typealias FinishedSubject = PassthroughSubject<TextTranslationTable, Error>
 
 
 /// Implemented by text translations services. The `TextTranslator` singleton does not keep a queue, if that kind of functionality is important the implemeted `TextTranslationService` would need to manage that on it's own.
@@ -187,7 +187,7 @@ public protocol TextTranslationService {
     ///   - to: languages to translate into
     ///   - table: a table containing all translated (and original) texts
     /// - Returns: a completion publisher
-    func translate(_ texts: [TranslationKey:String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable) -> FinishedPublisher
+    func translate(_ texts: [TranslationKey:String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher
     /// Translate all texts in an array from one language to one or more languages. The service is responsible for controling which strings acually requires translation.
     /// Use `Table.findUntranslated` to find out what requires translation and not. The service will not be called if there are no untranslated values
     /// - Note: The service provider does not check if `to` contains `from`
@@ -197,7 +197,7 @@ public protocol TextTranslationService {
     ///   - to: languages to translate into
     ///   - table: a table containing all translated (and original) texts
     /// - Returns: a completion publisher
-    func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable) -> FinishedPublisher
+    func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher
     /// Translate a text from one language to another
     /// The service provider is responsible for keeping cache if that's appropriate. For security reasons that feature should be configurable by the user.
     /// - Parameters:
@@ -226,7 +226,7 @@ final public class TextTranslator: ObservableObject {
     ///   - to: languages to translate into
     ///   - table: a table containing all translated (and original) texts
     /// - Returns: a completion publisher
-    final public func translate(_ texts: [TranslationKey:String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable = TextTransaltionTable()) -> FinishedPublisher {
+    final public func translate(_ texts: [TranslationKey:String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable = TextTranslationTable()) -> FinishedPublisher {
         guard let service = service else {
             return Fail(error: TextTranslatorError.missingService).eraseToAnyPublisher()
         }
@@ -251,7 +251,7 @@ final public class TextTranslator: ObservableObject {
     ///   - to: languages to translate into
     ///   - table: a table containing all translated (and original) texts
     /// - Returns: a completion publisher
-    final public func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTransaltionTable = TextTransaltionTable()) -> FinishedPublisher {
+    final public func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable = TextTranslationTable()) -> FinishedPublisher {
         guard let service = service else {
             return Fail(error: TextTranslatorError.missingService).eraseToAnyPublisher()
         }
