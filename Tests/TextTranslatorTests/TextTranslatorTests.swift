@@ -24,6 +24,12 @@ enum Strings: String, CaseIterable {
 }
 
 class TestTextTranslator : TextTranslationService {
+    var availableLocalesPublisher: AnyPublisher<Set<Locale>?, Never> {
+        return $availableLocales.eraseToAnyPublisher()
+    }
+    
+    @Published var availableLocales: Set<Locale>? = nil
+    
     func translate(_ texts: [TranslationKey : String], from: LanguageKey, to: [LanguageKey], storeIn table: TextTranslationTable) -> FinishedPublisher {
         let subj = FinishedSubject()
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.1) {
@@ -129,5 +135,22 @@ final class TextTranslatorTests: XCTestCase {
         } receiveValue: { table in
             XCTFail("Should not have completed")
         }.store(in: &cancellables)
+    }
+    func testLocales() {
+        let expectation = XCTestExpectation(description: "testLocales")
+        let service =  TestTextTranslator()
+        let translator = TextTranslator(service:service)
+        translator.availableLocalesPublisher.sink { locales in
+            guard let locales = locales else {
+                return
+            }
+            XCTAssertTrue(locales.count == 2)
+            XCTAssertTrue(translator.hasSupport(for: Locale(identifier: "sv_SE"), exact: true))
+            XCTAssertFalse(translator.hasSupport(for: Locale(identifier: "sv"), exact: true))
+            XCTAssertTrue(translator.hasSupport(for: Locale(identifier: "sv"), exact: false))
+            expectation.fulfill()
+        }.store(in: &cancellables)
+        service.availableLocales = [Locale(identifier: "sv_SE"),Locale(identifier: "en_US")]
+        wait(for: [expectation], timeout: 10)
     }
 }
