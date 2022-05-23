@@ -206,16 +206,52 @@ public protocol TextTranslationService {
     ///   - to: the language in which to translate into
     /// - Returns: a completion publisher
     func translate(_ text: String, from: LanguageKey, to: LanguageKey) -> TranslatedPublisher
+    
+    /// Currently available service locales publisher
+    /// The locales must be formatted as `language_REGION` or just `language` (don't use hyphens)
+    var availableLocalesPublisher: AnyPublisher<Set<Locale>?,Never> { get }
+    /// Currently available service locales
+    /// The locales must be formatted as `language_REGION` or just `language` (don't use hyphens)
+    var availableLocales:Set<Locale>? { get }
 }
 
 /// TextTranslator provides a common interface for Text translation services implementing the `TextTranslationService` protocol.
 final public class TextTranslator: ObservableObject {
+    /// Currently available locales publisher subject
+    private var availableLocalesSubject = CurrentValueSubject<Set<Locale>?,Never>(nil)
+    /// Currently available locales publisher
+    public var availableLocalesPublisher: AnyPublisher<Set<Locale>?,Never> {
+        return availableLocalesSubject.eraseToAnyPublisher()
+    }
+    /// Available locales publsiher subscriber
+    private var availableLocalesCancellable:AnyCancellable?
+    /// Currently available locales
+    public private(set) var availableLocales:Set<Locale>? = nil
     /// The text translation service provider
-    public var service: TextTranslationService?
+    public var service: TextTranslationService? {
+        didSet {
+            updateLocaleSubscriber()
+        }
+    }
+    /// Updates the currently available locales using the current service
+    func updateLocaleSubscriber() {
+        guard let service = service else {
+            availableLocalesCancellable = nil
+            availableLocales = nil
+            availableLocalesSubject.send(nil)
+            return
+        }
+        availableLocales = service.availableLocales
+        availableLocalesCancellable = service.availableLocalesPublisher.sink { [weak self] locales in
+            self?.availableLocales = locales
+            self?.availableLocalesSubject.send(locales)
+        }
+    }
     /// Initializes a new instance
     /// - Parameter service: The text translation service provider
     public init(service: TextTranslationService?) {
         self.service = service
+        updateLocaleSubscriber()
     }
     /// Translate all texts in a dictionary from one language to one or more languages
     /// If the supplied table is fully translated the method won't call the underlying service.
@@ -279,5 +315,22 @@ final public class TextTranslator: ObservableObject {
             return Fail(error: TextTranslatorError.missingService).eraseToAnyPublisher()
         }
         return service.translate(text, from: from, to: to)
+    }
+    /// Determines whether or not there is support for a specific locale
+    /// - Parameters:
+    ///   - locale: locale to search for
+    ///   - exact: indicated wehether or not to match on the whole identifier, ie region and language, and not just language
+    /// - Returns: whether or not a langauge is available, either as exact match (language and region) or partial (language only)
+    public func hasSupport(for locale: Locale, exact:Bool = false) -> Bool {
+        guard let locales = availableLocales else {
+            return false
+        }
+        if exact {
+            return locales.contains { $0.identifier == locale.identifier }
+        }
+        guard let code = locale.languageCode else {
+            return false
+        }
+        return locales.contains { $0.languageCode == code }
     }
 }
