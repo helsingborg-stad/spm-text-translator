@@ -1,5 +1,8 @@
 # TextTranslator
+## DEPRECATED
+Package will not recieve any updates, please use the TextTranslator library in https://github.com/helsingborg-stad/spm-daisy instead.
 
+## About
 TextTranslator provides a common interface for Text translation services implementing the `TextTranslationService` protocol.
 
 ## Text Translation Services
